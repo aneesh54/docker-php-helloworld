@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define your Docker image name and tag
+        DOCKER_IMAGE_NAME = 'php-my-app'
+        DOCKER_IMAGE_TAG = 'latest'
+        GIT_REPO_URL = 'https://github.com/aneesh54/docker-php-helloworld.git' // Your GitHub repo
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                // Clone the GitHub repository
+                git url: "${GIT_REPO_URL}"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image using the Dockerfile in the cloned repo
+                    def image = docker.build("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    // Run the Docker container with port binding (host:container)
+                    docker.image("${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}").run("-p 80:80")
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Cleanup: Stop and remove containers if any are running
+            bat 'docker container prune -f' // Use 'bat' for Windows command execution
+        }
+    }
+}
